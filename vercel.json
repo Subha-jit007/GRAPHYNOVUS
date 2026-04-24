@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "next build",
+  "installCommand": "npm install",
+  "functions": {
+    "app/api/ai/cortex/route.ts": { "maxDuration": 30 },
+    "app/api/ai/entropy/route.ts": { "maxDuration": 15 },
+    "app/api/ai/cascade/route.ts": { "maxDuration": 15 },
+    "app/api/ai/memory/route.ts": { "maxDuration": 15 }
+  }
+}
