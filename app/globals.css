@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light mode (optional per PRD §7.1 — dark-first) */
+    --background: 240 10% 98%;
+    --surface: 240 10% 96%;
+    --foreground: 240 20% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 20% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 20% 10%;
+    --primary: 244 100% 69%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 189 100% 50%;
+    --secondary-foreground: 240 20% 10%;
+    --muted: 240 10% 92%;
+    --muted-foreground: 240 10% 40%;
+    --accent: 244 100% 69%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 346 100% 62%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 10% 88%;
+    --input: 240 10% 88%;
+    --ring: 244 100% 69%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    /* Graphynovus dark theme — PRD §7.1 */
+    --background: 240 20% 5%;        /* #0A0A0F */
+    --surface: 240 20% 9%;           /* #12121A */
+    --foreground: 240 100% 97%;      /* #F0F0FF */
+    --card: 240 20% 9%;
+    --card-foreground: 240 100% 97%;
+    --popover: 240 20% 7%;
+    --popover-foreground: 240 100% 97%;
+    --primary: 244 100% 69%;         /* #6C63FF electric violet */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 189 100% 50%;       /* #00D4FF cyan */
+    --secondary-foreground: 240 20% 10%;
+    --muted: 240 15% 15%;
+    --muted-foreground: 240 10% 50%; /* #666680-ish */
+    --accent: 244 100% 69%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 346 100% 62%;     /* #FF3D6B */
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 15% 15%;
+    --input: 240 15% 15%;
+    --ring: 244 100% 69%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html,
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-surface/60 backdrop-blur-glass border border-white/[0.07];
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+}
