@@ -1,8 +1,5 @@
-import {
-  createBrowserClient,
-  createServerClient,
-  type CookieOptions,
-} from "@supabase/ssr";
+import "server-only";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import type { NextRequest, NextResponse } from "next/server";
 
@@ -10,11 +7,6 @@ type CookieToSet = { name: string; value: string; options: CookieOptions };
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-// Browser client — used in client components / hooks.
-export function getBrowserSupabase() {
-  return createBrowserClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-}
 
 // Server client for RSC / Route Handlers / Server Actions. Reads + writes
 // auth cookies via Next's cookies() store.

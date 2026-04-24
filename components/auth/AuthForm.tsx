@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Loader2, Mail, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getBrowserSupabase } from "@/lib/supabase";
+import { getBrowserSupabase } from "@/lib/supabase-browser";
 
 type Mode = "login" | "signup";
 
