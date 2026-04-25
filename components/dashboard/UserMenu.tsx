@@ -1,5 +1,5 @@
 import { LogOut } from "lucide-react";
-import { signOutAction } from "@/app/(dashboard)/actions";
+import { signOutAction } from "@/app/dashboard/actions";
 
 interface UserMenuProps {
   email?: string | null;

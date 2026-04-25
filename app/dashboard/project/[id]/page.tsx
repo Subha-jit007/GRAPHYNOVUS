@@ -6,5 +6,5 @@ export default function ProjectDefaultPage({
   params: { id: string };
 }) {
   // Primary view per PRD §7.2 is the Neural Task Graph
-  redirect(`/project/${params.id}/graph`);
+  redirect(`/dashboard/project/${params.id}/graph`);
 }

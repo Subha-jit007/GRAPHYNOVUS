@@ -32,7 +32,7 @@ export function ProjectCard({
 
   return (
     <Link
-      href={`/project/${project.id}`}
+      href={`/dashboard/project/${project.id}`}
       className="glass group relative rounded-2xl p-5 space-y-4 hover:border-primary/40 transition block"
     >
       <button
