@@ -3,10 +3,14 @@ import { getMiddlewareSupabase } from "@/lib/supabase";
 
 // Public routes — everything else inside the (dashboard) group is gated.
 const PUBLIC_PREFIXES = ["/login", "/signup", "/auth/callback"];
+const PUBLIC_EXACT = ["/"];
 
 function isPublicPath(pathname: string) {
-  return PUBLIC_PREFIXES.some(
-    (p) => pathname === p || pathname.startsWith(`${p}/`),
+  return (
+    PUBLIC_EXACT.includes(pathname) ||
+    PUBLIC_PREFIXES.some(
+      (p) => pathname === p || pathname.startsWith(`${p}/`),
+    )
   );
 }
 
@@ -26,7 +30,7 @@ export async function middleware(request: NextRequest) {
 
   // Signed-in users shouldn't see /login or /signup — bounce them to the app.
   if (user && (pathname === "/login" || pathname === "/signup")) {
-    return NextResponse.redirect(new URL("/", request.url));
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   // Unauthenticated users hitting any non-public route get sent to /login,

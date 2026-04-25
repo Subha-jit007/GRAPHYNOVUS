@@ -20,7 +20,7 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-screen flex">
       <aside className="w-64 border-r border-border bg-surface/40 p-4 space-y-4">
-        <Link href="/" className="font-display text-xl font-bold block">
+        <Link href="/dashboard" className="font-display text-xl font-bold block">
           Graphynovus
         </Link>
         <nav className="space-y-1 text-sm">
