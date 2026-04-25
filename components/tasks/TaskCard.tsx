@@ -1,8 +1,10 @@
 "use client";
 
+import { useMemo } from "react";
 import { Calendar, Clock, GitBranch } from "lucide-react";
 import type { Task } from "@/types";
 import { PRIORITY_COLORS } from "@/lib/tasks";
+import { useProjectStore } from "@/store/project-store";
 import { cn } from "@/lib/utils";
 
 // Compact Kanban card (PRD §7.2).
@@ -16,6 +18,12 @@ export function TaskCard({
   onOpen?: (task: Task) => void;
   dragging?: boolean;
 }) {
+  const projectTasks = useProjectStore((s) => s.tasks[task.projectId]);
+  const subtaskStats = useMemo(() => {
+    const children = projectTasks?.filter((t) => t.parentTaskId === task.id) ?? [];
+    return { total: children.length, done: children.filter((t) => t.status === "done").length };
+  }, [projectTasks, task.id]);
+
   return (
     <button
       type="button"
@@ -58,6 +66,23 @@ export function TaskCard({
           {task.tags.length > 4 ? (
             <span className="text-[10px] text-muted-foreground">+{task.tags.length - 4}</span>
           ) : null}
+        </div>
+      ) : null}
+
+      {subtaskStats.total > 0 ? (
+        <div className="flex items-center gap-1.5">
+          <div className="flex-1 h-0.5 rounded-full bg-border overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all"
+              style={{
+                width: `${Math.round((subtaskStats.done / subtaskStats.total) * 100)}%`,
+                backgroundColor: subtaskStats.done === subtaskStats.total ? "#00FF88" : "#6C63FF",
+              }}
+            />
+          </div>
+          <span className="text-[10px] font-mono text-muted-foreground shrink-0">
+            {subtaskStats.done}/{subtaskStats.total}
+          </span>
         </div>
       ) : null}
 

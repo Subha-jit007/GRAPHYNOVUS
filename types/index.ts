@@ -77,6 +77,8 @@ export interface Comment {
   id: string;
   taskId: string;
   userId: string;
+  userName: string | null;
+  userEmail: string | null;
   content: string;
   createdAt: string;
 }
@@ -107,6 +109,7 @@ export interface CortexResponse {
   criticalPath: string[];
   missingSteps: string[];
   weekOnePlan: string;
+  memoryUsed?: boolean; // true when the user's behavioral history was injected into the prompt
 }
 
 export interface EntropyBreakdown {
@@ -117,9 +120,16 @@ export interface EntropyBreakdown {
   velocityDecline: number;
 }
 
+export interface RebalancedTask {
+  taskId: string;
+  suggestedDueDate: string; // YYYY-MM-DD
+  reason: string;
+}
+
 export interface CascadeImpact {
   affected: Array<{ taskId: string; delayDays: number }>;
-  totalDelayDays: number;
-  finalDateShift: string | null;
-  rebalanceSuggestion: string | null;
+  totalDelayDays: number; // the delta (days) applied to the changed task
+  finalDateShift: string | null; // new furthest end date among affected tasks (YYYY-MM-DD)
+  rebalanceSuggestion: string | null; // Gemini narrative summary
+  rebalancedTasks: RebalancedTask[] | null; // Gemini-suggested per-task dates
 }

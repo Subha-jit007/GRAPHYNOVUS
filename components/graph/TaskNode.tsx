@@ -1,8 +1,9 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { Task, TaskStatus } from "@/types";
+import { useProjectStore } from "@/store/project-store";
 import { cn } from "@/lib/utils";
 
 // Status palette per PRD §7.2 Graph View.
@@ -27,6 +28,12 @@ export interface TaskNodeData extends Record<string, unknown> {
 function TaskNodeImpl({ data, selected }: NodeProps) {
   const { task, dependentCount, dimmed } = data as TaskNodeData;
   const color = STATUS_COLOR[task.status];
+
+  const projectTasks = useProjectStore((s) => s.tasks[task.projectId]);
+  const subtaskStats = useMemo(() => {
+    const children = projectTasks?.filter((t) => t.parentTaskId === task.id) ?? [];
+    return { total: children.length, done: children.filter((t) => t.status === "done").length };
+  }, [projectTasks, task.id]);
 
   // Width grows with dependents, capped. 0→200px, 1→220, ..., cap at ~320.
   const width = Math.min(320, 200 + dependentCount * 20);
@@ -83,6 +90,26 @@ function TaskNodeImpl({ data, selected }: NodeProps) {
               {tag.name}
             </span>
           ))}
+        </div>
+      ) : null}
+
+      {subtaskStats.total > 0 ? (
+        <div className="mt-2 space-y-0.5">
+          <div
+            className="h-0.5 rounded-full overflow-hidden"
+            style={{ background: "rgba(255,255,255,0.08)" }}
+          >
+            <div
+              className="h-full rounded-full transition-all"
+              style={{
+                width: `${Math.round((subtaskStats.done / subtaskStats.total) * 100)}%`,
+                backgroundColor: subtaskStats.done === subtaskStats.total ? "#00FF88" : color,
+              }}
+            />
+          </div>
+          <p className="text-[9px] font-mono text-muted-foreground">
+            {subtaskStats.done}/{subtaskStats.total} subtasks
+          </p>
         </div>
       ) : null}
 

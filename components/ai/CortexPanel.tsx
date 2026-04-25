@@ -91,7 +91,7 @@ function CortexResult({
   return (
     <div className="glass max-h-[50vh] overflow-y-auto rounded-xl p-4 text-sm shadow-2xl">
       <div className="mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Sparkles className="size-4 text-secondary" />
           <span className="font-medium">Cortex plan</span>
           <span className="text-xs text-muted-foreground">
@@ -101,6 +101,14 @@ function CortexResult({
               ? ` · ${result.timeline.startDate} → ${result.timeline.endDate}`
               : ""}
           </span>
+          {result.memoryUsed && (
+            <span
+              title="Estimates were adjusted based on your past task completion patterns"
+              className="flex items-center gap-1 rounded-full border border-[#6C63FF]/30 bg-[#6C63FF]/10 px-2 py-0.5 text-[10px] text-[#6C63FF]/90"
+            >
+              🧠 Personalized from your work history
+            </span>
+          )}
         </div>
         <button
           type="button"

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type {
+  Comment,
   DependencyType,
   Project,
   Tag,
@@ -8,6 +9,7 @@ import type {
   TaskPriority,
   TaskStatus,
 } from "@/types";
+import { logTaskCompletion } from "@/lib/memory";
 
 export interface CreateProjectInput {
   title: string;
@@ -49,6 +51,7 @@ interface ProjectState {
   tasks: Record<string, Task[]>;
   dependencies: Record<string, TaskDependency[]>;
   tags: Record<string, Tag[]>;
+  comments: Record<string, Comment[]>; // keyed by taskId
   loading: boolean;
   error: string | null;
   tasksLoading: boolean;
@@ -90,12 +93,38 @@ interface ProjectState {
   // Tags
   fetchTags: (projectId: string) => Promise<void>;
   createTag: (projectId: string, name: string, color?: string | null) => Promise<Tag>;
+
+  // Comments
+  fetchComments: (taskId: string) => Promise<void>;
+  createComment: (
+    taskId: string,
+    content: string,
+    optimisticUser: { id: string; email: string; name: string | null },
+  ) => Promise<void>;
+  deleteComment: (taskId: string, commentId: string) => Promise<void>;
 }
 
 async function parseOrThrow<T>(res: Response): Promise<T> {
   const body = (await res.json().catch(() => null)) as { error?: string } & T;
   if (!res.ok) throw new Error(body?.error ?? `Request failed: ${res.status}`);
   return body;
+}
+
+// BFS to collect a task ID and all its descendants.
+// Used to mirror the DB's `on delete cascade` for parent_task_id in the store.
+function collectDescendantIds(rootId: string, tasks: Task[]): Set<string> {
+  const ids = new Set<string>([rootId]);
+  const queue = [rootId];
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    for (const t of tasks) {
+      if (t.parentTaskId === current && !ids.has(t.id)) {
+        ids.add(t.id);
+        queue.push(t.id);
+      }
+    }
+  }
+  return ids;
 }
 
 function setTasksFor(
@@ -114,6 +143,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   tasks: {},
   dependencies: {},
   tags: {},
+  comments: {},
   loading: false,
   error: null,
   tasksLoading: false,
@@ -228,7 +258,13 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   deleteTask: async (projectId, id) => {
     const res = await fetch(`/api/tasks/${id}`, { method: "DELETE" });
     await parseOrThrow<{ ok: true }>(res);
-    set((state) => setTasksFor(state, projectId, (prev) => prev.filter((t) => t.id !== id)));
+    // Mirror the DB's `on delete cascade` for parent_task_id so orphaned
+    // subtasks don't linger as ghost cards in the Kanban / Graph views.
+    set((state) => {
+      const allTasks = state.tasks[projectId] ?? [];
+      const toRemove = collectDescendantIds(id, allTasks);
+      return setTasksFor(state, projectId, (prev) => prev.filter((t) => !toRemove.has(t.id)));
+    });
   },
 
   setTaskPosition: async (projectId, id, x, y) => {
@@ -314,6 +350,10 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
           list.map((t) => (t.id === id ? task : t)),
         ),
       );
+      // Fire-and-forget memory event when a task first reaches "done".
+      if (nextStatus === "done") {
+        logTaskCompletion({ ...target, tags: task.tags ?? target.tags });
+      }
     } catch (err) {
       // Revert on failure.
       set((state) =>
@@ -347,5 +387,77 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       tags: { ...state.tags, [projectId]: [...(state.tags[projectId] ?? []), tag] },
     }));
     return tag;
+  },
+
+  // ---------------------------------------------------------------------------
+  // Comments
+  // ---------------------------------------------------------------------------
+  fetchComments: async (taskId) => {
+    const res = await fetch(`/api/comments?taskId=${encodeURIComponent(taskId)}`, {
+      cache: "no-store",
+    });
+    const { comments } = await parseOrThrow<{ comments: Comment[] }>(res);
+    set((state) => ({ comments: { ...state.comments, [taskId]: comments } }));
+  },
+
+  createComment: async (taskId, content, optimisticUser) => {
+    const tempId = `tmp-${Date.now()}`;
+    const tempComment: Comment = {
+      id: tempId,
+      taskId,
+      userId: optimisticUser.id,
+      userName: optimisticUser.name,
+      userEmail: optimisticUser.email,
+      content,
+      createdAt: new Date().toISOString(),
+    };
+
+    set((state) => ({
+      comments: {
+        ...state.comments,
+        [taskId]: [...(state.comments[taskId] ?? []), tempComment],
+      },
+    }));
+
+    try {
+      const res = await fetch("/api/comments", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ taskId, content }),
+      });
+      const { comment } = await parseOrThrow<{ comment: Comment }>(res);
+      set((state) => ({
+        comments: {
+          ...state.comments,
+          [taskId]: (state.comments[taskId] ?? []).map((c) =>
+            c.id === tempId ? comment : c,
+          ),
+        },
+      }));
+    } catch (err) {
+      set((state) => ({
+        comments: {
+          ...state.comments,
+          [taskId]: (state.comments[taskId] ?? []).filter((c) => c.id !== tempId),
+        },
+      }));
+      throw err;
+    }
+  },
+
+  deleteComment: async (taskId, commentId) => {
+    set((state) => ({
+      comments: {
+        ...state.comments,
+        [taskId]: (state.comments[taskId] ?? []).filter((c) => c.id !== commentId),
+      },
+    }));
+    try {
+      const res = await fetch(`/api/comments/${commentId}`, { method: "DELETE" });
+      await parseOrThrow<{ ok: true }>(res);
+    } catch (err) {
+      await get().fetchComments(taskId);
+      throw err;
+    }
   },
 }));

@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
 import { generateStructured } from "@/lib/gemini";
+import { getServerSupabase } from "@/lib/supabase";
+import {
+  aggregatePatterns,
+  formatMemoryForPrompt,
+  type CompletionRow,
+} from "@/lib/memory";
 import type {
   CortexMode,
   CortexRequest,
@@ -16,6 +22,10 @@ export const runtime = "nodejs";
 // structured plan, and returns tasks + dependency edges referenced by
 // temporary task IDs ("t1", "t2", ...). The client is responsible for
 // turning the plan into real rows when the user accepts it.
+//
+// When the authenticated user has enough behavioral history in ai_memory,
+// their patterns (typical delays, velocity per category) are injected into
+// the Gemini system prompt so estimates are personalised.
 export async function POST(request: Request) {
   let body: CortexRequest;
   try {
@@ -36,29 +46,56 @@ export async function POST(request: Request) {
     );
   }
 
+  // --- Behavioral memory injection (best-effort; never fails the request) ---
+  let memoryContext = "";
+  try {
+    const supabase = getServerSupabase();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user) {
+      const { data } = await supabase
+        .from("ai_memory")
+        .select("pattern_data_json")
+        .eq("user_id", user.id)
+        .eq("pattern_type", "task_completion")
+        .order("updated_at", { ascending: false })
+        .limit(500);
+
+      if (data?.length) {
+        const rows = data.map((r) => r.pattern_data_json as CompletionRow);
+        const patterns = aggregatePatterns(rows);
+        memoryContext = formatMemoryForPrompt(patterns);
+      }
+    }
+  } catch {
+    // Memory failure is non-fatal — Cortex continues without personalisation.
+  }
+
+  const memoryUsed = memoryContext.length > 0;
+
   try {
     const raw = await generateStructured<RawCortex>(
       buildUserPrompt(prompt, mode, body.projectId),
       {
-        systemInstruction: SYSTEM_INSTRUCTION,
+        systemInstruction: buildSystemInstruction(memoryContext),
         temperature: 0.5,
         maxOutputTokens: 4096,
       },
     );
-    return NextResponse.json(normalize(raw));
+    return NextResponse.json({ ...normalize(raw), memoryUsed });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Cortex failed";
-    // Surface auth/config issues as 500 with a useful message; other
-    // errors (rate limit, malformed JSON) also land here.
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
 // ---------------------------------------------------------------------------
-// Prompts
+// System instruction
 // ---------------------------------------------------------------------------
 
-const SYSTEM_INSTRUCTION = `You are Graphynovus Cortex, the planning brain of an AI-native project board.
+const BASE_INSTRUCTION = `You are Graphynovus Cortex, the planning brain of an AI-native project board.
 You break real-world goals into a dependency-aware execution plan.
 
 Rules:
@@ -75,6 +112,15 @@ Rules:
 - criticalPath is an ordered list of task ids forming the longest blocker chain.
 - missingSteps lists 0-4 steps the user likely forgot; phrase each as an imperative sentence.
 - weekOnePlan is a short markdown checklist (3-6 bullets, "- [ ] ...") of what to do in the first week.`;
+
+function buildSystemInstruction(memoryContext: string): string {
+  if (!memoryContext) return BASE_INSTRUCTION;
+  return `${BASE_INSTRUCTION}\n\n${memoryContext}`;
+}
+
+// ---------------------------------------------------------------------------
+// User prompt
+// ---------------------------------------------------------------------------
 
 function buildUserPrompt(
   prompt: string,
@@ -165,7 +211,7 @@ const VALID_STATUSES: TaskStatus[] = [
 ];
 const VALID_PRIORITIES: TaskPriority[] = ["low", "medium", "high", "urgent"];
 
-function normalize(raw: RawCortex): CortexResponse {
+function normalize(raw: RawCortex): Omit<CortexResponse, "memoryUsed"> {
   const tasks = (raw.tasks ?? []).map((t, i) => {
     const tempId = t.tempId ?? t.id ?? `t${i + 1}`;
     const status = (VALID_STATUSES as string[]).includes(t.status ?? "")
@@ -202,10 +248,9 @@ function normalize(raw: RawCortex): CortexResponse {
     .map((d) => ({
       sourceTaskId: d.sourceTaskId!,
       targetTaskId: d.targetTaskId!,
-      type: (d.type === "related" || d.type === "subtask" ? d.type : "blocks") as
-        | "blocks"
-        | "related"
-        | "subtask",
+      type: (d.type === "related" || d.type === "subtask"
+        ? d.type
+        : "blocks") as "blocks" | "related" | "subtask",
     }));
 
   return {
