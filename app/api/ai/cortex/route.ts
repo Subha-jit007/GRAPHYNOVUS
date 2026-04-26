@@ -17,44 +17,50 @@ import type {
 export const runtime = "nodejs";
 
 // POST /api/ai/cortex — AI Execution Cortex (PRD USP-2, §8.1)
-//
-// Takes a natural-language goal + mode, asks Gemini to break it into a
-// structured plan, and returns tasks + dependency edges referenced by
-// temporary task IDs ("t1", "t2", ...). The client is responsible for
-// turning the plan into real rows when the user accepts it.
-//
-// When the authenticated user has enough behavioral history in ai_memory,
-// their patterns (typical delays, velocity per category) are injected into
-// the Gemini system prompt so estimates are personalised.
 export async function POST(request: Request) {
+  console.log("[cortex] POST /api/ai/cortex — start");
+
+  // ── 1. Env check ──────────────────────────────────────────────────────────
+  if (!process.env.GEMINI_API_KEY) {
+    console.error("[cortex] GEMINI_API_KEY is missing from environment");
+    return NextResponse.json(
+      { error: "Server misconfiguration: GEMINI_API_KEY is not set. Add it in Vercel → Settings → Environment Variables." },
+      { status: 500 },
+    );
+  }
+  console.log(`[cortex] GEMINI_API_KEY present (ends ...${process.env.GEMINI_API_KEY.slice(-4)})`);
+
+  // ── 2. Parse body ─────────────────────────────────────────────────────────
   let body: CortexRequest;
   try {
-    body = (await request.json()) as CortexRequest;
-  } catch {
-    return NextResponse.json(
-      { error: "Invalid JSON body" },
-      { status: 400 },
-    );
+    const text = await request.text();
+    console.log("[cortex] raw body:", text.slice(0, 300));
+    if (!text || text.trim() === "") {
+      return NextResponse.json({ error: "Request body is empty" }, { status: 400 });
+    }
+    body = JSON.parse(text) as CortexRequest;
+  } catch (err) {
+    console.error("[cortex] JSON parse error:", err);
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
   const prompt = body?.prompt?.trim();
   const mode: CortexMode = body?.mode ?? "generate";
+  console.log(`[cortex] mode: ${mode}, prompt: "${prompt?.slice(0, 80)}"`);
+
   if (!prompt) {
-    return NextResponse.json(
-      { error: "prompt is required" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "prompt is required" }, { status: 400 });
   }
 
-  // --- Behavioral memory injection (best-effort; never fails the request) ---
+  // ── 3. Behavioral memory (best-effort) ───────────────────────────────────
   let memoryContext = "";
   try {
+    console.log("[cortex] fetching behavioral memory…");
     const supabase = getServerSupabase();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
 
     if (user) {
+      console.log(`[cortex] user: ${user.id}`);
       const { data } = await supabase
         .from("ai_memory")
         .select("pattern_data_json")
@@ -67,14 +73,21 @@ export async function POST(request: Request) {
         const rows = data.map((r) => r.pattern_data_json as CompletionRow);
         const patterns = aggregatePatterns(rows);
         memoryContext = formatMemoryForPrompt(patterns);
+        console.log(`[cortex] memory: ${patterns.length} patterns injected`);
+      } else {
+        console.log("[cortex] memory: no history found — continuing without personalisation");
       }
+    } else {
+      console.log("[cortex] memory: no authenticated user");
     }
-  } catch {
-    // Memory failure is non-fatal — Cortex continues without personalisation.
+  } catch (memErr) {
+    console.error("[cortex] memory fetch failed (non-fatal):", memErr);
   }
 
   const memoryUsed = memoryContext.length > 0;
 
+  // ── 4. Call Gemini ────────────────────────────────────────────────────────
+  console.log("[cortex] calling Gemini…");
   try {
     const raw = await generateStructured<RawCortex>(
       buildUserPrompt(prompt, mode, body.projectId),
@@ -84,10 +97,15 @@ export async function POST(request: Request) {
         maxOutputTokens: 4096,
       },
     );
+    console.log(`[cortex] Gemini returned ${raw.tasks?.length ?? 0} tasks`);
     return NextResponse.json({ ...normalize(raw), memoryUsed });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Cortex failed";
-    return NextResponse.json({ error: message }, { status: 500 });
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[cortex] Gemini call failed:", err);
+    return NextResponse.json(
+      { error: `Cortex error: ${message}` },
+      { status: 500 },
+    );
   }
 }
 
