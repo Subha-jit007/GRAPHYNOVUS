@@ -1,6 +1,12 @@
 import Link from "next/link";
+import { getServerSupabase } from "@/lib/supabase";
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const supabase = getServerSupabase();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-6 text-center">
       <div className="max-w-3xl space-y-6">
@@ -18,18 +24,29 @@ export default function LandingPage() {
           powered by Google Gemini.
         </p>
         <div className="flex items-center justify-center gap-3 pt-4">
-          <Link
-            href="/signup"
-            className="rounded-lg bg-primary px-6 py-3 font-medium text-primary-foreground hover:opacity-90 transition"
-          >
-            Get started
-          </Link>
-          <Link
-            href="/login"
-            className="rounded-lg border border-border px-6 py-3 font-medium hover:bg-surface transition"
-          >
-            Log in
-          </Link>
+          {user ? (
+            <Link
+              href="/dashboard"
+              className="rounded-lg bg-primary px-6 py-3 font-medium text-primary-foreground hover:opacity-90 transition"
+            >
+              Continue as {user.email}
+            </Link>
+          ) : (
+            <>
+              <Link
+                href="/signup"
+                className="rounded-lg bg-primary px-6 py-3 font-medium text-primary-foreground hover:opacity-90 transition"
+              >
+                Get started
+              </Link>
+              <Link
+                href="/login"
+                className="rounded-lg border border-border px-6 py-3 font-medium hover:bg-surface transition"
+              >
+                Log in
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </main>
