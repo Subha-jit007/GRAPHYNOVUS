@@ -4,7 +4,7 @@ import { TodayFocus } from "@/components/dashboard/TodayFocus";
 
 export default function DashboardHomePage() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 p-6 overflow-y-auto h-full">
       <section>
         <h1 className="font-display text-3xl font-bold">Today&apos;s Focus</h1>
         <p className="text-sm text-muted-foreground">

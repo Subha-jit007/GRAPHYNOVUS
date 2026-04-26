@@ -22,7 +22,7 @@ export default function ProjectLayout({
   const base = `/dashboard/project/${params.id}`;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-3.5rem)]">
+    <div className="flex flex-col h-full">
       <div className="flex items-center gap-1 border-b border-border px-2 shrink-0">
         {TABS.map((tab) => {
           const href = `${base}/${tab.href}`;
@@ -43,7 +43,7 @@ export default function ProjectLayout({
           );
         })}
       </div>
-      <div className="flex-1 overflow-hidden">{children}</div>
+      <div className="flex-1 overflow-hidden p-4">{children}</div>
     </div>
   );
 }

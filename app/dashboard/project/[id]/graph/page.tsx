@@ -16,7 +16,7 @@ export default function GraphViewPage({
   params: { id: string };
 }) {
   return (
-    <div className="h-full flex gap-4 p-4">
+    <div className="h-full flex gap-4">
       <div className="flex-1 relative rounded-xl border border-border overflow-hidden">
         <TaskGraph projectId={params.id} />
         <div className="absolute top-4 right-4 z-10">

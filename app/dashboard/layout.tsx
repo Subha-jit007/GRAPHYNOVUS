@@ -36,7 +36,7 @@ export default async function DashboardLayout({
           <div className="text-sm text-muted-foreground">Dashboard</div>
           <UserMenu email={user.email} />
         </header>
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1 overflow-hidden">{children}</main>
       </div>
     </div>
   );

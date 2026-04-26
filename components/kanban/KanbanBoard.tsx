@@ -107,7 +107,7 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
         onDragEnd={onDragEnd}
         onDragCancel={() => setActiveId(null)}
       >
-        <div className="h-[calc(100vh-8rem)] overflow-x-auto">
+        <div className="h-full overflow-x-auto">
           <div className="flex gap-4 h-full min-w-max pb-2">
             {TASK_STATUSES.map((status) => (
               <Column
