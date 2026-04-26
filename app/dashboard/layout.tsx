@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSupabase } from "@/lib/supabase";
 import { UserMenu } from "@/components/dashboard/UserMenu";
+import { SidebarProjectList } from "@/components/dashboard/SidebarProjectList";
 
 export default async function DashboardLayout({
   children,
@@ -24,10 +25,10 @@ export default async function DashboardLayout({
           Graphynovus
         </Link>
         <nav className="space-y-1 text-sm">
-          {/* TODO(MVP): render project list with entropy dots */}
-          <p className="text-muted-foreground text-xs uppercase tracking-wider pt-4">
+          <p className="text-muted-foreground text-xs uppercase tracking-wider pt-4 pb-1">
             Projects
           </p>
+          <SidebarProjectList />
         </nav>
       </aside>
       <div className="flex-1 flex flex-col">
