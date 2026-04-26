@@ -83,10 +83,12 @@ export function TaskCreator({
             reset();
           }
         }}
-        placeholder="Task title"
+        placeholder="Task title — press Enter to create"
         disabled={submitting}
         className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm outline-none focus:border-primary"
       />
+      {/* Hidden submit button guarantees Enter submits the form in all browsers */}
+      <button type="submit" className="sr-only" aria-hidden="true" tabIndex={-1} />
       {error ? <p className="text-[11px] text-destructive">{error}</p> : null}
     </form>
   );
