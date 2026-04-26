@@ -21,6 +21,9 @@ import { cn } from "@/lib/utils";
 
 const MS_PER_DAY = 86_400_000;
 
+const EMPTY_TAGS: Tag[] = [];
+const EMPTY_TASKS: Task[] = [];
+
 export function TaskDetail({
   task,
   projectId,
@@ -36,9 +39,9 @@ export function TaskDetail({
   const deleteTask = useProjectStore((s) => s.deleteTask);
   const createTag = useProjectStore((s) => s.createTag);
   const fetchTags = useProjectStore((s) => s.fetchTags);
-  const projectTags = useProjectStore((s) => s.tags[projectId] ?? []);
+  const projectTags = useProjectStore((s) => s.tags[projectId] ?? EMPTY_TAGS);
   // All tasks in this project — needed to apply cascade date shifts.
-  const projectTasks = useProjectStore((s) => s.tasks[projectId] ?? []);
+  const projectTasks = useProjectStore((s) => s.tasks[projectId] ?? EMPTY_TASKS);
 
   const [form, setForm] = useState(() => taskToForm(task));
   const [tagIds, setTagIds] = useState<Set<string>>(

@@ -22,11 +22,13 @@ import { TaskDetail } from "@/components/tasks/TaskDetail";
 import { useProjectStore } from "@/store/project-store";
 import { cn } from "@/lib/utils";
 
+const EMPTY_TASKS: Task[] = [];
+
 // PRD §5.2 / §7.2: Kanban with columns Backlog | Todo | In Progress | Blocked | Review | Done.
 // Drag-and-drop via @dnd-kit; status is updated optimistically in the store,
 // reverted on API failure.
 export function KanbanBoard({ projectId }: { projectId: string }) {
-  const tasks = useProjectStore((s) => s.tasks[projectId] ?? []);
+  const tasks = useProjectStore((s) => s.tasks[projectId] ?? EMPTY_TASKS);
   const loading = useProjectStore((s) => s.tasksLoading);
   const error = useProjectStore((s) => s.tasksError);
   const fetchTasks = useProjectStore((s) => s.fetchTasks);

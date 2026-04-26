@@ -26,6 +26,13 @@ import { GraphToolbar } from "@/components/graph/GraphToolbar";
 import { TaskDetail } from "@/components/tasks/TaskDetail";
 import { useProjectStore } from "@/store/project-store";
 
+// Stable empty-array sentinels for Zustand v5 selectors.
+// useSyncExternalStore calls the selector on every render; `?? []` would
+// produce a new reference each time, making Object.is always return false
+// and triggering an infinite re-render loop.
+const EMPTY_TASKS: Task[] = [];
+const EMPTY_DEPS: TaskDependency[] = [];
+
 // PRD USP-1 / §7.2: Neural Task Graph — force-style canvas of tasks and
 // dependency edges, color-coded by status, size by dependents.
 const NODE_TYPES = { task: TaskNode };
@@ -39,8 +46,8 @@ export function TaskGraph({ projectId }: { projectId: string }) {
 }
 
 function TaskGraphInner({ projectId }: { projectId: string }) {
-  const tasks = useProjectStore((s) => s.tasks[projectId] ?? []);
-  const deps = useProjectStore((s) => s.dependencies[projectId] ?? []);
+  const tasks = useProjectStore((s) => s.tasks[projectId] ?? EMPTY_TASKS);
+  const deps = useProjectStore((s) => s.dependencies[projectId] ?? EMPTY_DEPS);
   const fetchTasks = useProjectStore((s) => s.fetchTasks);
   const fetchDependencies = useProjectStore((s) => s.fetchDependencies);
   const createDependency = useProjectStore((s) => s.createDependency);

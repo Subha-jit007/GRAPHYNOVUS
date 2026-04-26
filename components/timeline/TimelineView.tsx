@@ -9,6 +9,9 @@ import { CascadeModal } from "@/components/ai/CascadeModal";
 import { useProjectStore } from "@/store/project-store";
 import { cn } from "@/lib/utils";
 
+const EMPTY_TASKS: Task[] = [];
+const EMPTY_DEPS: TaskDependency[] = [];
+
 // ── Layout constants ───────────────────────────────────────────────────────────
 const ROW_H    = 44;   // px per task row
 const GROUP_H  = 34;   // px per status group header
@@ -77,8 +80,8 @@ interface BarGeo { x: number; w: number }
 // ── TimelineView ───────────────────────────────────────────────────────────────
 
 export function TimelineView({ projectId }: { projectId: string }) {
-  const tasks      = useProjectStore((s) => s.tasks[projectId] ?? []);
-  const deps       = useProjectStore((s) => s.dependencies[projectId] ?? []);
+  const tasks      = useProjectStore((s) => s.tasks[projectId] ?? EMPTY_TASKS);
+  const deps       = useProjectStore((s) => s.dependencies[projectId] ?? EMPTY_DEPS);
   const loading    = useProjectStore((s) => s.tasksLoading);
   const fetchTasks = useProjectStore((s) => s.fetchTasks);
   const fetchDeps  = useProjectStore((s) => s.fetchDependencies);

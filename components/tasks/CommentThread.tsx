@@ -10,8 +10,10 @@ import { cn } from "@/lib/utils";
 
 type CurrentUser = { id: string; email: string; name: string | null };
 
+const EMPTY_COMMENTS: Comment[] = [];
+
 export function CommentThread({ taskId }: { taskId: string }) {
-  const comments = useProjectStore((s) => s.comments[taskId] ?? []);
+  const comments = useProjectStore((s) => s.comments[taskId] ?? EMPTY_COMMENTS);
   const fetchComments = useProjectStore((s) => s.fetchComments);
   const createComment = useProjectStore((s) => s.createComment);
   const deleteComment = useProjectStore((s) => s.deleteComment);

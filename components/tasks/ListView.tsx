@@ -14,7 +14,7 @@ import {
   Trash2,
   type LucideIcon,
 } from "lucide-react";
-import type { Task, TaskPriority, TaskStatus } from "@/types";
+import type { Tag, Task, TaskPriority, TaskStatus } from "@/types";
 import {
   PRIORITY_COLORS,
   STATUS_LABELS,
@@ -93,13 +93,16 @@ const STATUS_ORDER: Record<TaskStatus, number> = {
 
 // ─── ListView ─────────────────────────────────────────────────────────────
 
+const EMPTY_TASKS: Task[] = [];
+const EMPTY_TAGS: Tag[] = [];
+
 export function ListView({ projectId }: { projectId: string }) {
-  const tasks = useProjectStore((s) => s.tasks[projectId] ?? []);
+  const tasks = useProjectStore((s) => s.tasks[projectId] ?? EMPTY_TASKS);
   const loading = useProjectStore((s) => s.tasksLoading);
   const error = useProjectStore((s) => s.tasksError);
   const fetchTasks = useProjectStore((s) => s.fetchTasks);
   const fetchTags = useProjectStore((s) => s.fetchTags);
-  const projectTags = useProjectStore((s) => s.tags[projectId] ?? []);
+  const projectTags = useProjectStore((s) => s.tags[projectId] ?? EMPTY_TAGS);
   const moveTask = useProjectStore((s) => s.moveTask);
   const deleteTask = useProjectStore((s) => s.deleteTask);
   const updateTask = useProjectStore((s) => s.updateTask);
