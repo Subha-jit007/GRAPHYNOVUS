@@ -1,7 +1,6 @@
 import "server-only";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import type { NextRequest, NextResponse } from "next/server";
 
 type CookieToSet = { name: string; value: string; options: CookieOptions };
 
@@ -32,23 +31,3 @@ export function getServerSupabase() {
   });
 }
 
-// Middleware client — needs request + response so it can rewrite cookies
-// onto the outgoing response (refreshing the session in flight).
-export function getMiddlewareSupabase(
-  request: NextRequest,
-  response: NextResponse,
-) {
-  return createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
-      },
-      setAll(cookiesToSet: CookieToSet[]) {
-        for (const { name, value, options } of cookiesToSet) {
-          request.cookies.set({ name, value, ...options });
-          response.cookies.set({ name, value, ...options });
-        }
-      },
-    },
-  });
-}

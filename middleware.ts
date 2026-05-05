@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getMiddlewareSupabase } from "@/lib/supabase";
+import { getMiddlewareSupabase } from "@/lib/supabase-middleware";
 
 // Public routes — everything else inside the (dashboard) group is gated.
 const PUBLIC_PREFIXES = ["/login", "/signup", "/auth/callback"];
@@ -19,13 +19,23 @@ export async function middleware(request: NextRequest) {
     request: { headers: request.headers },
   });
 
-  // Touching getUser() refreshes the session cookies on the response, even
-  // when we end up redirecting below.
+  // getSession() reads + decodes the JWT from the auth cookie locally —
+  // no network round-trip to Supabase for valid (non-expired) tokens.
+  // It only calls the network when the access token is expired and needs
+  // refreshing via the refresh token (~once per hour).
+  //
+  // getUser() was replaced here because it validates the token against
+  // Supabase's servers on EVERY request, adding 200-1500ms and routinely
+  // exceeding Vercel's 1500ms middleware hard limit (MIDDLEWARE_INVOCATION_TIMEOUT).
+  //
+  // API routes and Server Components still call getUser() for authoritative
+  // auth — this middleware is only responsible for routing decisions.
   const supabase = getMiddlewareSupabase(request, response);
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
 
+  const user = session?.user ?? null;
   const { pathname, search } = request.nextUrl;
 
   // Signed-in users shouldn't see /login or /signup — bounce them to the app.
