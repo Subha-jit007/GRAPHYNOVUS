@@ -30,6 +30,11 @@ export interface StructuredOptions {
   maxOutputTokens?: number;
 }
 
+// Hard cap so a slow/hung Gemini call never eats the full Vercel maxDuration.
+// 25 s gives ample room under the 60 s function limit while aborting early
+// enough to return a useful error to the client.
+const GEMINI_TIMEOUT_MS = 25_000;
+
 // Ask Gemini for a JSON object and parse it. Throws if the model returns
 // malformed JSON or an empty response.
 export async function generateStructured<T = unknown>(
@@ -43,7 +48,7 @@ export async function generateStructured<T = unknown>(
   const generationConfig: GenerationConfig = {
     responseMimeType: "application/json",
     temperature: opts.temperature ?? 0.4,
-    maxOutputTokens: opts.maxOutputTokens ?? 4096,
+    maxOutputTokens: opts.maxOutputTokens ?? 2048,
   };
 
   const model = genAI.getGenerativeModel({
@@ -54,7 +59,13 @@ export async function generateStructured<T = unknown>(
 
   let result;
   try {
-    result = await model.generateContent(prompt);
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(
+        () => reject(new Error(`Gemini timed out after ${GEMINI_TIMEOUT_MS / 1000}s`)),
+        GEMINI_TIMEOUT_MS,
+      ),
+    );
+    result = await Promise.race([model.generateContent(prompt), timeout]);
   } catch (err) {
     console.error("[gemini] generateContent threw:", err);
     throw err;

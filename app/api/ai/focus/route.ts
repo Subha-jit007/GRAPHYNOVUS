@@ -7,6 +7,7 @@ import { scoreTasks, type FocusItem, REASON_LABELS } from "@/lib/focus";
 import { generateStructured } from "@/lib/gemini";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 // GET /api/ai/focus — Score-ranked focus task list for Today's Focus widget.
 //

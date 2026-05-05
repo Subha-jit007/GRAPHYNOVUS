@@ -15,6 +15,7 @@ import type {
 } from "@/types";
 
 export const runtime = "nodejs";
+export const maxDuration = 60; // seconds — Vercel Pro; Hobby is capped at 10s
 
 // POST /api/ai/cortex — AI Execution Cortex (PRD USP-2, §8.1)
 export async function POST(request: Request) {
@@ -67,7 +68,7 @@ export async function POST(request: Request) {
         .eq("user_id", user.id)
         .eq("pattern_type", "task_completion")
         .order("updated_at", { ascending: false })
-        .limit(500);
+        .limit(50); // 50 most-recent events — enough signal, avoids large payload
 
       if (data?.length) {
         const rows = data.map((r) => r.pattern_data_json as CompletionRow);
@@ -94,7 +95,7 @@ export async function POST(request: Request) {
       {
         systemInstruction: buildSystemInstruction(memoryContext),
         temperature: 0.5,
-        maxOutputTokens: 4096,
+        maxOutputTokens: 2048,
       },
     );
     console.log(`[cortex] Gemini returned ${raw.tasks?.length ?? 0} tasks`);

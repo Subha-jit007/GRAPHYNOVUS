@@ -7,6 +7,7 @@ import { generateStructured } from "@/lib/gemini";
 import type { CascadeImpact, RebalancedTask, Task } from "@/types";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 interface CascadeBody {
   changedTaskId: string;

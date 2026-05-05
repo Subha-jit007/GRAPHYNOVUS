@@ -7,6 +7,7 @@ import {
 } from "@/lib/memory";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const MS_PER_DAY = 86_400_000;
 

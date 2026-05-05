@@ -5,6 +5,7 @@ import { computeEntropy, entropyReasons } from "@/lib/entropy";
 import type { DependencyType, TaskDependency } from "@/types";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 interface DepRow {
   id: string;
