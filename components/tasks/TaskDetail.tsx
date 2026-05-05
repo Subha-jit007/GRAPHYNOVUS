@@ -313,9 +313,19 @@ export function TaskDetail({
               </Field>
 
               <div>
-                <span className="block text-xs uppercase tracking-wider text-muted-foreground mb-2">
-                  Subtasks
-                </span>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Subtasks
+                  </span>
+                  {(() => {
+                    const count = projectTasks.filter((t) => t.parentTaskId === task.id).length;
+                    return count > 0 ? (
+                      <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-primary/15 px-1 font-mono text-[10px] font-semibold text-primary">
+                        {count}
+                      </span>
+                    ) : null;
+                  })()}
+                </div>
                 <SubtaskList parentTask={task} projectId={projectId} />
               </div>
 
