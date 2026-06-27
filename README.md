@@ -4,6 +4,8 @@
 
 AI-native project management built around a neural task graph and a Gemini-powered execution cortex. See [PRD.md](PRD.md) for the full spec.
 
+> **⚠ Live demo status.** The landing page is live at **[graphynovus.vercel.app](https://graphynovus.vercel.app)**. Sign-in and the dashboard are temporarily offline because the hosted demo's free-tier **Supabase** backend is paused — this is **not an application bug**; it just needs the Supabase project resumed and the Vercel environment variables re-applied. The full source (auth, API routes, AI execution cortex) is in this repo and runs end-to-end locally with your own Supabase + Gemini keys — see **Local Setup** below.
+
 ## Features
 
 - **Neural Task Graph** — force-directed graph of tasks and dependencies (React Flow v12)
